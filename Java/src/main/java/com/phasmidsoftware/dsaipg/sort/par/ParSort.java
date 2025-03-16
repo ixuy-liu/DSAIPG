@@ -1,3 +1,7 @@
+/*
+ * Copyright (c) 2024. Robin Hillyard
+ */
+
 package com.phasmidsoftware.dsaipg.sort.par;
 
 import java.util.Arrays;
@@ -35,17 +39,22 @@ final class ParSort {
      * @param to    the ending index (exclusive) of the portion of the array to be sorted
      */
     public static void sort(int[] array, int from, int to) {
-        if (to - from >= cutoff) {
-            CompletableFuture<int[]> completableFuture1 = null;
-            CompletableFuture<int[]> completableFuture2 = null;
-            // TO BE IMPLEMENTED 
-            // END SOLUTION
-            CompletableFuture<int[]> completableFuture = completableFuture1.thenCombine(completableFuture2, ParSort::doMerge);
+        if (to - from >= cutoff) { // If the partition is large, sort in parallel
+            int mid = (from + to) / 2;
+
+            CompletableFuture<int[]> completableFuture1 = asyncSort(array, from, mid);
+            CompletableFuture<int[]> completableFuture2 = asyncSort(array, mid, to);
+
+            CompletableFuture<int[]> completableFuture = completableFuture1
+                    .thenCombine(completableFuture2, ParSort::doMerge);
+
             completableFuture.whenComplete((result, throwable) -> System.arraycopy(result, 0, array, from, result.length));
             completableFuture.join();
-        } else
+        } else {
             Arrays.sort(array, from, to);
+        }
     }
+
 
     /**
      * Recursively sorts a specified portion of the input array and returns a new sorted array.
@@ -58,9 +67,11 @@ final class ParSort {
      * @return a new sorted array containing the elements from the specified range of the input array
      */
     static int[] sortRecursive(int[] array, int from, int to) {
-        int[] result = new int[to - from];
         // TO BE IMPLEMENTED 
          // NOTE you need to do something here so that result is the sorted version of array.
+        int[] result = Arrays.copyOfRange(array, from, to);
+
+        Arrays.sort(result);
         // END SOLUTION
         return result;
     }
