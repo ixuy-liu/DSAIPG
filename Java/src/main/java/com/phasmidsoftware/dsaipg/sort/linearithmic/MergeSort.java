@@ -5,6 +5,10 @@ import com.phasmidsoftware.dsaipg.sort.generic.SortException;
 import com.phasmidsoftware.dsaipg.sort.generic.SortWithComparableHelper;
 import com.phasmidsoftware.dsaipg.sort.helper.Helper;
 import com.phasmidsoftware.dsaipg.util.config.Config;
+import static com.phasmidsoftware.dsaipg.util.config.Config_Benchmark.CUTOFF;
+import static com.phasmidsoftware.dsaipg.util.config.Config_Benchmark.CUTOFF_DEFAULT;
+
+
 
 import java.util.Arrays;
 
@@ -139,13 +143,41 @@ public class MergeSort<X extends Comparable<X>> extends SortWithComparableHelper
         Config config = helper.getConfig();
         boolean insurance = config.getBoolean(MERGESORT, INSURANCE);
         boolean noCopy = config.getBoolean(MERGESORT, NOCOPY);
-        if (to <= from + helper.cutoff()) { // XXX check that a cutoff value of 1 effectively stops the cutoff mechanism.
+        if (to <= from + helper.cutoff()) {
             insertionSort.sort(a, from, to);
             return;
         }
 
-        // TO BE IMPLEMENTED  : implement merge sort with insurance and no-copy optimizations
-throw new RuntimeException("implementation missing");
+        int mid = from + (to - from) / 2;
+        X[] source = noCopy ? aux : a;
+        X[] destination = noCopy ? a : aux;
+
+        sort(source, destination, from, mid);
+        sort(source, destination, mid, to);
+
+        if (insurance && helper.compare(source[mid - 1], source[mid]) <= 0) {
+            for (int k = from; k < to; k++) {
+                helper.copy(source[k], destination, k);
+            }
+            return;
+        }
+
+        merge(source, destination, from, mid, to);
+
+        if (!noCopy) {
+            for (int i = from; i < to; i++) {
+                helper.copy(helper.get(aux, i), a, i);
+            }
+        }
+
+        if (insurance) {
+            for (int i = from + 1; i < to; i++) {
+                if (helper.less(helper.get(a, i), helper.get(a, i - 1))) {
+                    helper.swap(a, i, i - 1);
+                }
+            }
+        }
+
     }
 
     /**
